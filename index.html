@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿Quién paga la cuenta? — IRPF en España</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-deep: #07070c;
+  --bg-card: #0d0d18;
+  --border-subtle: rgba(255,255,255,0.06);
+  --text-primary: #f0ece4;
+  --text-secondary: rgba(240,236,228,0.55);
+  --text-muted: rgba(240,236,228,0.3);
+  --accent-gold: #d4a853;
+  --accent-amber: #e8922f;
+  --accent-orange: #e06830;
+  --accent-red: #c93535;
+  --accent-crimson: #9b1d3c;
+  --accent-deep: #6b1540;
+  --accent-hot: #ff2d6b;
+  --accent-electric: #ff1a53;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+.container { max-width: 1140px; margin: 0 auto; padding: 0 clamp(1.5rem, 4vw, 3.5rem); }
+.section { position: relative; padding: 7rem 0; }
+
+.reveal {
+  opacity: 0; transform: translateY(30px);
+  transition: opacity 0.8s cubic-bezier(0.22,1,0.36,1), transform 0.8s cubic-bezier(0.22,1,0.36,1);
+}
+.reveal.vis { opacity: 1; transform: none; }
+.rd1 { transition-delay: .12s; }
+.rd2 { transition-delay: .24s; }
+.rd3 { transition-delay: .36s; }
+
+/* ===== HERO ===== */
+.hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; text-align: center;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; top: -20%; left: 50%; transform: translateX(-50%);
+  width: 160%; height: 70%;
+  background: radial-gradient(ellipse at center, rgba(212,168,83,0.07) 0%, rgba(155,29,60,0.035) 35%, transparent 65%);
+  pointer-events: none;
+}
+.hero-kicker {
+  font-weight: 500; font-size: 0.78rem; letter-spacing: 0.28em;
+  text-transform: uppercase; color: var(--accent-gold); margin-bottom: 2.2rem; opacity: 0.8;
+}
+.hero h1 {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(2.2rem, 5.5vw, 4.6rem); line-height: 1.08;
+  max-width: 14ch; margin: 0 auto 1.5rem;
+  background: linear-gradient(145deg, #f5f0e6 0%, var(--accent-gold) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero-sub { font-size: clamp(.92rem,1.4vw,1.1rem); color: var(--text-secondary); margin-bottom: 4rem; }
+.hero-counters { display: flex; gap: 3.5rem; align-items: center; flex-wrap: wrap; justify-content: center; }
+.hero-counter { text-align: center; }
+.hero-counter-num {
+  font-family: var(--font-display); font-size: clamp(2.2rem,4.5vw,3.4rem);
+  font-weight: 700; color: var(--accent-gold); line-height: 1.15;
+}
+.hero-counter-label { font-size: .82rem; color: var(--text-muted); margin-top: .5rem; }
+.hero-divider { width: 1px; height: 55px; background: linear-gradient(180deg, transparent, rgba(255,255,255,0.12), transparent); }
+.scroll-cue {
+  position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  color: var(--text-muted); font-size: .7rem; letter-spacing: .18em; text-transform: uppercase;
+  animation: psc 2.5s ease-in-out infinite;
+}
+.scroll-cue-line { width: 1px; height: 28px; background: linear-gradient(180deg, rgba(212,168,83,0.5), transparent); }
+@keyframes psc { 0%,100%{opacity:.35} 50%{opacity:.7} }
+
+/* ===== SCROLLYTELLING ===== */
+.scrolly-section {
+  position: relative;
+}
+.scrolly-slide {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.scrolly-slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(212,168,83,0.03) 0%, transparent 70%);
+  pointer-events: none;
+}
+.scrolly-inner {
+  max-width: 900px;
+  opacity: 0;
+  transform: translateY(50px) scale(0.97);
+  transition: opacity 1s cubic-bezier(0.22,1,0.36,1), transform 1s cubic-bezier(0.22,1,0.36,1);
+}
+.scrolly-slide.active .scrolly-inner {
+  opacity: 1;
+  transform: none;
+}
+.scrolly-big-num {
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 12vw, 10rem);
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+.scrolly-big-num.red-grad {
+  background: linear-gradient(135deg, var(--accent-red), var(--accent-hot));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.scrolly-big-num.crimson-grad {
+  background: linear-gradient(135deg, var(--accent-amber), var(--accent-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.scrolly-context {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.8vw, 2rem);
+  color: var(--text-secondary);
+  line-height: 1.3;
+  margin-bottom: 1rem;
+  font-weight: 400;
+}
+.scrolly-punchline {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3.5vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 0.5rem;
+}
+.scrolly-punchline.gold { color: var(--accent-gold); }
+.scrolly-punchline.red { color: var(--accent-hot); }
+.scrolly-punchline.amber { color: var(--accent-amber); }
+
+.scrolly-sub-detail {
+  font-size: clamp(0.9rem, 1.6vw, 1.15rem);
+  color: var(--text-muted);
+  margin-top: 1.5rem;
+  line-height: 1.6;
+}
+
+.scrolly-stagger-1 {
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.6s 0.2s cubic-bezier(0.22,1,0.36,1), transform 0.6s 0.2s cubic-bezier(0.22,1,0.36,1);
+}
+.scrolly-stagger-2 {
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.6s 0.5s cubic-bezier(0.22,1,0.36,1), transform 0.6s 0.5s cubic-bezier(0.22,1,0.36,1);
+}
+.scrolly-stagger-3 {
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.6s 0.8s cubic-bezier(0.22,1,0.36,1), transform 0.6s 0.8s cubic-bezier(0.22,1,0.36,1);
+}
+.scrolly-stagger-4 {
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.6s 1.1s cubic-bezier(0.22,1,0.36,1), transform 0.6s 1.1s cubic-bezier(0.22,1,0.36,1);
+}
+.scrolly-slide.active .scrolly-stagger-1,
+.scrolly-slide.active .scrolly-stagger-2,
+.scrolly-slide.active .scrolly-stagger-3,
+.scrolly-slide.active .scrolly-stagger-4 {
+  opacity: 1; transform: none;
+}
+
+/* Divider between scrollytelling sections */
+.scrolly-divider {
+  width: 1px;
+  height: 120px;
+  background: linear-gradient(180deg, transparent, rgba(212,168,83,0.2), transparent);
+  margin: 0 auto;
+}
+
+/* Section headers */
+.sh { margin-bottom: 3rem; }
+.sh-num { font-size: .75rem; font-weight: 500; color: var(--accent-gold); letter-spacing: .2em; display: block; margin-bottom: 1rem; opacity: .6; }
+.sh-title {
+  font-family: var(--font-display); font-size: clamp(1.7rem,3.2vw,2.6rem); font-weight: 700; line-height: 1.15; margin-bottom: 1rem;
+}
+.sh-desc { font-size: 1rem; line-height: 1.7; color: var(--text-secondary); max-width: 660px; }
+
+/* Parallax headers */
+.sh-title {
+  transition: transform 0.1s linear;
+}
+
+/* ===== CHART BOXES ===== */
+.chart-box {
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: 14px; padding: 1.5rem; position: relative;
+}
+.chart-box svg { display: block; width: 100%; }
+
+/* Lorenz tooltip */
+#lorenz-tip {
+  position: absolute; pointer-events: none;
+  background: rgba(7,7,12,0.92); border: 1px solid rgba(212,168,83,0.35);
+  border-radius: 8px; padding: 10px 14px; font-size: .82rem;
+  color: var(--text-primary); line-height: 1.55; backdrop-filter: blur(10px);
+  opacity: 0; transition: opacity .15s; z-index: 100; white-space: nowrap;
+}
+#lorenz-tip.show { opacity: 1; }
+
+.lorenz-legend {
+  display: flex; justify-content: center; gap: 2rem; margin-top: 1.2rem; flex-wrap: wrap;
+}
+.lorenz-legend-item { display: flex; align-items: center; gap: .5rem; font-size: .78rem; color: var(--text-muted); }
+.lorenz-legend-line { width: 18px; height: 2px; }
+
+/* ===== BARS ===== */
+.bars-row { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+@media(max-width:780px){ .bars-row{grid-template-columns:1fr} }
+
+.bar-panel {
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: 14px; padding: 1.8rem 1.5rem 1.5rem;
+}
+.bp-title { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; margin-bottom: 1.3rem; }
+
+.b-row {
+  display: flex; align-items: center; margin-bottom: .55rem; cursor: pointer;
+  padding: 2px 4px; border-radius: 6px;
+  transition: background 0.25s;
+}
+.b-row:hover { background: rgba(255,255,255,0.03); }
+.b-row:hover .b-fill { filter: brightness(1.25); }
+.b-lbl { font-size: .78rem; color: var(--text-secondary); width: 82px; flex-shrink: 0; text-align: right; padding-right: 10px; white-space: nowrap; }
+.b-track { flex: 1; height: 24px; background: rgba(255,255,255,0.025); border-radius: 4px; position: relative; overflow: visible; }
+.b-fill { height: 100%; border-radius: 4px; width: 0%; transition: width 1s cubic-bezier(0.22,1,0.36,1); position: relative; }
+.b-val {
+  position: absolute; right: -44px; top: 50%; transform: translateY(-50%);
+  font-size: .7rem; font-weight: 600; color: var(--text-secondary); width: 40px;
+  opacity: 0; transition: opacity .4s .1s;
+}
+.b-fill.go ~ .b-val { opacity: 1; }
+
+/* Special glow for 30-60K bracket in revenue panel */
+.b-fill.highlight-bar {
+  box-shadow: 0 0 18px rgba(213,80,48,0.4), 0 0 40px rgba(213,80,48,0.15);
+}
+
+#bar-tip {
+  position: fixed; pointer-events: none;
+  background: rgba(7,7,12,0.94); border: 1px solid rgba(212,168,83,0.3);
+  border-radius: 8px; padding: 12px 16px; font-size: .8rem;
+  color: var(--text-primary); line-height: 1.7; backdrop-filter: blur(10px);
+  opacity: 0; transition: opacity .15s; z-index: 1000; max-width: 310px;
+}
+#bar-tip.show { opacity: 1; }
+.btt { font-weight: 600; color: var(--accent-gold); margin-bottom: 5px; font-size: .88rem; }
+
+/* ===== BUBBLE ===== */
+.bubble-box {
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: 14px; padding: 1.5rem .5rem 1rem; max-width: 920px; margin: 0 auto;
+}
+.bubble-box svg { display: block; width: 100%; }
+
+.mult-box {
+  text-align: center; margin-top: 2.5rem; padding: 2rem;
+  background: linear-gradient(135deg, rgba(212,168,83,0.07), rgba(155,29,60,0.05));
+  border: 1px solid rgba(212,168,83,0.12); border-radius: 14px;
+  max-width: 920px; margin-left: auto; margin-right: auto; margin-top: 2.5rem;
+}
+.mult-num {
+  font-family: var(--font-display); font-size: clamp(2.5rem,5vw,4.2rem); font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-red));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.mult-label { font-size: .95rem; color: var(--text-secondary); margin-top: .5rem; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+
+/* ===== COMPARISON WALL ===== */
+.comparison-wall {
+  padding: 5rem 0;
+  position: relative;
+}
+.comparison-wall::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent, rgba(212,168,83,0.02), transparent);
+  pointer-events: none;
+}
+.cw-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+.cw-amount {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  text-align: center;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-amber));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 3rem;
+}
+.cw-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  max-width: 920px;
+  margin: 0 auto;
+}
+@media(max-width:700px){ .cw-grid{grid-template-columns:1fr} }
+
+.cw-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, transform 0.3s;
+}
+.cw-card:hover {
+  border-color: rgba(212,168,83,0.18);
+  transform: translateY(-4px);
+}
+.cw-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-amber));
+}
+.cw-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+.cw-equiv-num {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.5vw, 2.8rem);
+  font-weight: 800;
+  color: var(--accent-gold);
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+.cw-equiv-text {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+/* Proportional blocks mosaic */
+.cw-mosaic {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  margin-top: 1rem;
+}
+.cw-mosaic-block {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 0.3s, transform 0.3s;
+}
+.cw-mosaic-block.vis {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ===== CARDS ===== */
+.cards { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.4rem; }
+@media(max-width:780px){ .cards{grid-template-columns:1fr} }
+
+.icard {
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: 14px; padding: 2rem 1.8rem; position: relative; overflow: hidden;
+  transition: border-color .3s, transform .3s;
+}
+.icard:hover { border-color: rgba(212,168,83,0.18); transform: translateY(-3px); }
+.icard-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.icard:nth-child(1) .icard-bar { background: linear-gradient(90deg, var(--accent-crimson), var(--accent-red)); }
+.icard:nth-child(2) .icard-bar { background: linear-gradient(90deg, var(--accent-amber), var(--accent-gold)); }
+.icard:nth-child(3) .icard-bar { background: linear-gradient(90deg, var(--accent-red), var(--accent-deep)); }
+.icard:nth-child(4) .icard-bar { background: linear-gradient(90deg, var(--accent-orange), var(--accent-amber)); }
+
+.icard-num {
+  font-family: var(--font-display); font-size: clamp(3rem,6vw,4.5rem);
+  font-weight: 800; line-height: 1.05; margin-bottom: .7rem;
+}
+.icard:nth-child(1) .icard-num { color: var(--accent-red); }
+.icard:nth-child(2) .icard-num { color: var(--accent-gold); }
+.icard:nth-child(3) .icard-num { color: var(--accent-crimson); }
+.icard:nth-child(4) .icard-num { color: var(--accent-orange); }
+
+.icard-text { font-size: .92rem; line-height: 1.6; color: var(--text-secondary); }
+.icard-text strong { color: var(--text-primary); font-weight: 600; }
+
+/* Progress bar under cards */
+.icard-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 0 0 14px 14px;
+  width: 0%;
+  transition: width 1.5s cubic-bezier(0.22,1,0.36,1);
+}
+.icard:nth-child(1) .icard-progress { background: linear-gradient(90deg, var(--accent-crimson), var(--accent-red)); }
+.icard:nth-child(2) .icard-progress { background: linear-gradient(90deg, var(--accent-amber), var(--accent-gold)); }
+.icard:nth-child(3) .icard-progress { background: linear-gradient(90deg, var(--accent-red), var(--accent-deep)); }
+.icard:nth-child(4) .icard-progress { background: linear-gradient(90deg, var(--accent-orange), var(--accent-amber)); }
+
+/* ===== FOOTER ===== */
+.footer { padding: 4rem 0 3rem; border-top: 1px solid var(--border-subtle); text-align: center; }
+.footer-sep { width: 50px; height: 1px; background: linear-gradient(90deg, transparent, var(--accent-gold), transparent); margin: 0 auto 2rem; opacity: .35; }
+.footer-impact {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.5;
+  max-width: 700px;
+  margin: 0 auto 2.5rem;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent-gold));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.footer-src { font-size: .82rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: .7rem; }
+.footer-note { font-size: .75rem; color: var(--text-muted); font-style: italic; }
+.footer-credit { margin-top: 1.8rem; font-size: .68rem; color: var(--text-muted); letter-spacing: .12em; text-transform: uppercase; }
+
+/* Pulse animation for extreme data points */
+@keyframes subtlePulse {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 4px currentColor); }
+  50% { filter: brightness(1.15) drop-shadow(0 0 12px currentColor); }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@media(max-width:600px){
+  .hero-counters{gap:2rem;flex-direction:column}
+  .hero-divider{width:50px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+  .b-lbl{width:62px;font-size:.66rem}
+  .section{padding:5rem 0}
+  .scrolly-slide { min-height: 85vh; }
+  .cw-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== WAFFLE: De cada 10 ===== */
+.waffle-section {
+  padding: 6rem 0;
+  position: relative;
+  overflow: hidden;
+}
+.waffle-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent, rgba(201,53,53,0.03), transparent);
+  pointer-events: none;
+}
+.waffle-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.6rem;
+  line-height: 1.3;
+}
+.waffle-subtitle {
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  margin-bottom: 3.5rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+.waffle-grid {
+  display: flex;
+  justify-content: center;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  flex-wrap: wrap;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.waffle-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  width: 70px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s cubic-bezier(0.22,1,0.36,1), transform 0.5s cubic-bezier(0.22,1,0.36,1);
+}
+.waffle-person.vis {
+  opacity: 1;
+  transform: none;
+}
+.waffle-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  position: relative;
+  transition: transform 0.3s;
+}
+.waffle-person:hover .waffle-icon { transform: scale(1.15); }
+.waffle-icon.zero {
+  background: rgba(201,53,53,0.12);
+  border: 2px solid rgba(201,53,53,0.4);
+  color: var(--accent-red);
+}
+.waffle-icon.poco {
+  background: rgba(224,104,48,0.10);
+  border: 2px solid rgba(224,104,48,0.35);
+  color: var(--accent-orange);
+}
+.waffle-icon.carga {
+  background: rgba(212,168,83,0.12);
+  border: 2px solid rgba(212,168,83,0.5);
+  color: var(--accent-gold);
+}
+.waffle-label {
+  font-size: 0.68rem;
+  text-align: center;
+  line-height: 1.4;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.waffle-icon.zero .waffle-label, .waffle-icon.poco .waffle-label, .waffle-icon.carga .waffle-label {
+  color: inherit;
+}
+.waffle-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  margin-top: 3rem;
+  flex-wrap: wrap;
+}
+.waffle-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+.waffle-legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+.waffle-legend-text { color: var(--text-secondary); }
+.waffle-legend-text strong { color: var(--text-primary); font-weight: 600; }
+.waffle-stat-row {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 2.5rem;
+  flex-wrap: wrap;
+}
+.waffle-stat {
+  text-align: center;
+  padding: 1.2rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  min-width: 200px;
+}
+.waffle-stat-num {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.waffle-stat-num.red { color: var(--accent-red); }
+.waffle-stat-num.amber { color: var(--accent-amber); }
+.waffle-stat-num.gold { color: var(--accent-gold); }
+.waffle-stat-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.4rem;
+  line-height: 1.5;
+}
+.waffle-source {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2rem;
+  font-style: italic;
+}
+</style>
+</head>
+<body>
+
+<section class="hero" id="hero">
+  <div class="container">
+    <div class="hero-kicker reveal">Investigación con datos oficiales</div>
+    <h1 class="reveal rd1">¿Quién paga la cuenta?</h1>
+    <p class="hero-sub reveal rd2">Datos oficiales de la Agencia Tributaria, ejercicio 2023</p>
+    <div class="hero-counters reveal rd3">
+      <div class="hero-counter">
+        <div class="hero-counter-num" id="ctr-rev">0</div>
+        <div class="hero-counter-label">millones de euros recaudados</div>
+      </div>
+      <div class="hero-divider"></div>
+      <div class="hero-counter">
+        <div class="hero-counter-num" id="ctr-dec">0</div>
+        <div class="hero-counter-label">millones de declarantes</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-cue"><span>Desplaza</span><div class="scroll-cue-line"></div></div>
+</section>
+
+<!-- ===== SCROLLYTELLING COMPARISONS ===== -->
+<section class="scrolly-section" id="scrolly">
+
+  <div class="scrolly-slide" id="scrolly-1">
+    <div class="scrolly-inner">
+      <div class="scrolly-big-num scrolly-stagger-1">54,5%</div>
+      <div class="scrolly-context scrolly-stagger-2">de los declarantes…</div>
+      <div class="scrolly-punchline gold scrolly-stagger-3">solo paga el 6,8% del IRPF</div>
+      <div class="scrolly-sub-detail scrolly-stagger-4">Más de 13 millones de personas con rentas inferiores a 21.000 € contribuyen con apenas una mínima fracción del impuesto.</div>
+    </div>
+  </div>
+
+  <div class="scrolly-divider"></div>
+
+  <div class="scrolly-slide" id="scrolly-2">
+    <div class="scrolly-inner">
+      <div class="scrolly-big-num red-grad scrolly-stagger-1">14.738</div>
+      <div class="scrolly-context scrolly-stagger-2">personas</div>
+      <div class="scrolly-punchline red scrolly-stagger-3">pagan más IRPF que 13 millones de personas juntas</div>
+      <div class="scrolly-sub-detail scrolly-stagger-4">Cada una paga de media 556.815 €. Juntas aportan 8.205 millones de euros — más que el 54,5% inferior de todos los declarantes.</div>
+    </div>
+  </div>
+
+  <div class="scrolly-divider"></div>
+
+  <div class="scrolly-slide" id="scrolly-3">
+    <div class="scrolly-inner">
+      <div class="scrolly-context scrolly-stagger-1" style="margin-bottom: 1.5rem; font-size: clamp(1.1rem, 2.2vw, 1.6rem);">Si el IRPF fuera un restaurante…</div>
+      <div class="scrolly-big-num crimson-grad scrolly-stagger-2" style="font-size: clamp(2.5rem, 7vw, 5.5rem);">La mitad</div>
+      <div class="scrolly-punchline amber scrolly-stagger-3">de los comensales pagarían el 6,8% de la cuenta</div>
+      <div class="scrolly-context scrolly-stagger-4" style="margin-top: 2rem;">y <span style="color: var(--accent-hot); font-weight: 700; font-size: clamp(1.4rem, 3vw, 2.2rem);">1 de cada 18</span> pagaría el <span style="color: var(--accent-hot); font-weight: 700;">42,3%</span></div>
+    </div>
+  </div>
+
+  <div class="scrolly-divider"></div>
+
+  <div class="scrolly-slide" id="scrolly-4">
+    <div class="scrolly-inner">
+      <div class="scrolly-big-num red-grad scrolly-stagger-1">4 de 10</div>
+      <div class="scrolly-context scrolly-stagger-2">declarantes de IRPF</div>
+      <div class="scrolly-punchline red scrolly-stagger-3">pagan exactamente 0 euros</div>
+      <div class="scrolly-sub-detail scrolly-stagger-4">Tras aplicar deducciones y mínimos personales, el 40% de los declarantes termina con cuota cero. No son evasores: simplemente sus ingresos no superan los umbrales mínimos. <span style="color: var(--text-muted); font-size: 0.85em;">Fuente: Business Insider España / Agencia Tributaria, IRPF 2023</span></div>
+    </div>
+  </div>
+
+</section>
+
+<section class="section" id="sec-lorenz">
+  <div class="container">
+    <div class="sh reveal">
+      <span class="sh-num">01</span>
+      <h2 class="sh-title">La Gran Desigualdad Fiscal</h2>
+      <p class="sh-desc">La curva de Lorenz fiscal muestra cómo se distribuye la carga del IRPF. Cuanto más se aleja la curva de la diagonal, mayor es la concentración de la recaudación en los tramos altos.</p>
+    </div>
+    <div style="max-width:880px;margin:0 auto;position:relative">
+      <div class="chart-box reveal rd1" id="lorenz-chart"></div>
+      <div id="lorenz-tip"></div>
+      <div class="lorenz-legend reveal rd2">
+        <div class="lorenz-legend-item">
+          <div class="lorenz-legend-line" style="background:repeating-linear-gradient(90deg,rgba(255,255,255,.25) 0 4px,transparent 4px 8px)"></div>
+          Igualdad perfecta
+        </div>
+        <div class="lorenz-legend-item">
+          <div class="lorenz-legend-line" style="background:linear-gradient(90deg,var(--accent-gold),var(--accent-crimson))"></div>
+          Distribución real del IRPF
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="sec-bars">
+  <div class="container">
+    <div class="sh reveal">
+      <span class="sh-num">02</span>
+      <h2 class="sh-title">¿Quiénes son y cuánto aportan?</h2>
+      <p class="sh-desc">A la izquierda, el peso demográfico de cada tramo. A la derecha, su contribución al IRPF. La desproporción entre ambos gráficos revela quién soporta realmente el impuesto.</p>
+    </div>
+    <div class="bars-row reveal rd1" id="bars-root"></div>
+    <div id="bar-tip"></div>
+  </div>
+</section>
+
+<!-- ===== WAFFLE: De cada 10 declarantes ===== -->
+<section class="waffle-section" id="sec-waffle">
+  <div class="container">
+    <div class="waffle-title reveal">De cada <span style="color: var(--accent-hot); font-size: 1.3em;">10</span> declarantes de IRPF…</div>
+    <div class="waffle-subtitle reveal rd1">¿cuántos pagan realmente algo?</div>
+
+    <div class="waffle-grid" id="waffle-grid">
+      <div class="waffle-person" data-delay="0">
+        <div class="waffle-icon zero">🚫</div>
+        <div class="waffle-label" style="color: var(--accent-red);">0 €</div>
+      </div>
+      <div class="waffle-person" data-delay="80">
+        <div class="waffle-icon zero">🚫</div>
+        <div class="waffle-label" style="color: var(--accent-red);">0 €</div>
+      </div>
+      <div class="waffle-person" data-delay="160">
+        <div class="waffle-icon zero">🚫</div>
+        <div class="waffle-label" style="color: var(--accent-red);">0 €</div>
+      </div>
+      <div class="waffle-person" data-delay="240">
+        <div class="waffle-icon zero">🚫</div>
+        <div class="waffle-label" style="color: var(--accent-red);">0 €</div>
+      </div>
+      <div class="waffle-person" data-delay="350">
+        <div class="waffle-icon poco">💸</div>
+        <div class="waffle-label" style="color: var(--accent-orange);">Muy poco</div>
+      </div>
+      <div class="waffle-person" data-delay="430">
+        <div class="waffle-icon poco">💸</div>
+        <div class="waffle-label" style="color: var(--accent-orange);">Muy poco</div>
+      </div>
+      <div class="waffle-person" data-delay="510">
+        <div class="waffle-icon poco">💸</div>
+        <div class="waffle-label" style="color: var(--accent-orange);">Muy poco</div>
+      </div>
+      <div class="waffle-person" data-delay="620">
+        <div class="waffle-icon carga">⚡</div>
+        <div class="waffle-label" style="color: var(--accent-gold);">Carga real</div>
+      </div>
+      <div class="waffle-person" data-delay="700">
+        <div class="waffle-icon carga">⚡</div>
+        <div class="waffle-label" style="color: var(--accent-gold);">Carga real</div>
+      </div>
+      <div class="waffle-person" data-delay="780">
+        <div class="waffle-icon carga">⚡</div>
+        <div class="waffle-label" style="color: var(--accent-gold);">Carga real</div>
+      </div>
+    </div>
+
+    <div class="waffle-legend reveal rd2">
+      <div class="waffle-legend-item">
+        <div class="waffle-legend-dot" style="background: var(--accent-red);"></div>
+        <div class="waffle-legend-text"><strong>4 de cada 10</strong> — cuota cero</div>
+      </div>
+      <div class="waffle-legend-item">
+        <div class="waffle-legend-dot" style="background: var(--accent-orange);"></div>
+        <div class="waffle-legend-text"><strong>3 de cada 10</strong> — aportan muy poco</div>
+      </div>
+      <div class="waffle-legend-item">
+        <div class="waffle-legend-dot" style="background: var(--accent-gold);"></div>
+        <div class="waffle-legend-text"><strong>3 de cada 10</strong> — cargan con el peso</div>
+      </div>
+    </div>
+
+    <div class="waffle-stat-row reveal rd3">
+      <div class="waffle-stat">
+        <div class="waffle-stat-num red">67,5%</div>
+        <div class="waffle-stat-text">de las declaraciones<br>resultaron en <strong>devolución</strong></div>
+      </div>
+      <div class="waffle-stat">
+        <div class="waffle-stat-num amber">16,21M</div>
+        <div class="waffle-stat-text">declaraciones con<br><strong>resultado a devolver</strong></div>
+      </div>
+      <div class="waffle-stat">
+        <div class="waffle-stat-num gold">6,17M</div>
+        <div class="waffle-stat-text">declaraciones que<br><strong>realmente ingresaron</strong></div>
+      </div>
+    </div>
+
+    <div class="waffle-source reveal">Fuentes: RTVE / Agencia Tributaria — Estadísticas IRPF 2023 · Business Insider España</div>
+  </div>
+</section>
+
+<section class="section" id="sec-bubble">
+  <div class="container">
+    <div class="sh reveal">
+      <span class="sh-num">03</span>
+      <h2 class="sh-title">Lo que paga cada contribuyente</h2>
+      <p class="sh-desc">La cuota media por declarante en cada tramo de renta revela diferencias abismales. El tamaño de cada círculo es proporcional a la cuota media pagada.</p>
+    </div>
+    <div class="bubble-box reveal rd1" id="bubble-chart"></div>
+    <div class="mult-box reveal rd2">
+      <div class="mult-num">12.655×</div>
+      <div class="mult-label">diferencia entre la cuota media del tramo 1.500–6.000 € (44 €) y el tramo superior a 601.000 € (556.815 €)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COMPARISON WALL ===== -->
+<section class="comparison-wall" id="sec-wall">
+  <div class="container">
+    <div class="cw-title reveal">La cuota media de los más ricos</div>
+    <div class="cw-amount reveal rd1">556.815 € / año</div>
+    <div class="cw-grid reveal rd2" id="cw-grid">
+
+      <div class="cw-card">
+        <div class="cw-card-inner">
+          <div class="cw-icon">💰</div>
+          <div class="cw-equiv-num" data-target="22">0</div>
+          <div class="cw-equiv-text">salarios mínimos anuales completos</div>
+          <div class="cw-mosaic" id="mosaic-1"></div>
+        </div>
+      </div>
+
+      <div class="cw-card">
+        <div class="cw-card-inner">
+          <div class="cw-icon">🏠</div>
+          <div class="cw-equiv-num" data-target="1" data-suffix=" piso">0</div>
+          <div class="cw-equiv-text">en Madrid al precio medio actual (aprox. 550.000 €)</div>
+          <div class="cw-mosaic" id="mosaic-2"></div>
+        </div>
+      </div>
+
+      <div class="cw-card">
+        <div class="cw-card-inner">
+          <div class="cw-icon">🎓</div>
+          <div class="cw-equiv-num" data-target="79">0</div>
+          <div class="cw-equiv-text">matrículas universitarias completas</div>
+          <div class="cw-mosaic" id="mosaic-3"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section" id="sec-cards">
+  <div class="container">
+    <div class="sh reveal">
+      <span class="sh-num">04</span>
+      <h2 class="sh-title">Las cifras que importan</h2>
+    </div>
+    <div class="cards" id="cards-root">
+      <div class="icard reveal">
+        <div class="icard-bar"></div>
+        <div class="icard-num" data-count="42.3" data-suffix="%">42,3%</div>
+        <div class="icard-text">El <strong>5,6% más rico</strong> (rentas superiores a 60.000 €) aporta el <strong>42,3% de toda la recaudación</strong> del IRPF. Son 1.346.400 personas financiando casi la mitad del impuesto.</div>
+        <div class="icard-progress" data-target="42.3"></div>
+      </div>
+      <div class="icard reveal rd1">
+        <div class="icard-bar"></div>
+        <div class="icard-num" data-count="6.8" data-suffix="%">6,8%</div>
+        <div class="icard-text">El <strong>54,5% de declarantes</strong> con rentas inferiores a 21.000 € apenas contribuye con el <strong>6,8% de la recaudación total</strong>. Son más de 13 millones de personas.</div>
+        <div class="icard-progress" data-target="6.8"></div>
+      </div>
+      <div class="icard reveal rd2">
+        <div class="icard-bar"></div>
+        <div class="icard-num" data-count="556815" data-prefix="€" data-suffix="">€556.815</div>
+        <div class="icard-text"><strong>14.738 personas</strong> que ganan más de 601.000 € pagan una media de <strong>556.815 € cada una</strong>, aportando el 6,94% del IRPF — 8.205 millones de euros.</div>
+        <div class="icard-progress" data-target="6.94"></div>
+      </div>
+      <div class="icard reveal rd3">
+        <div class="icard-bar"></div>
+        <div class="icard-num" data-count="37.4" data-suffix="%">37,4%</div>
+        <div class="icard-text">La <strong>clase media</strong> (30.000–60.000 €), que representa el 22% de los declarantes, soporta la <strong>mayor carga individual por tramo</strong>: el 37,4% del total recaudado.</div>
+        <div class="icard-progress" data-target="37.4"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-sep"></div>
+    <p class="footer-impact reveal">España depende fiscalmente de menos de 1,4 millones de personas para financiar el 42% de su principal impuesto directo</p>
+    <p class="footer-src reveal rd1">Fuentes: Agencia Tributaria — Estadística de los declarantes del IRPF, Ejercicio 2023 (Cuota líquida incrementada total, partida 587)<br>RTVE — Campaña de la Renta 2023–2024 · Business Insider España</p>
+    <p class="footer-note reveal rd2">Datos correspondientes al Territorio de Régimen Fiscal Común (excluye País Vasco y Navarra)</p>
+    <p class="footer-credit reveal rd3">Visualización interactiva de datos fiscales</p>
+  </div>
+</footer>
+
+<script>
+const D = [
+  { bracket:'Negativa o cero', short:'≤ 0', dec:1270127, pDec:5.30, rev:258352, pRev:0.00, avg:6799 },
+  { bracket:'0 – 1.500 €', short:'0–1,5K', dec:1691865, pDec:7.05, rev:297983, pRev:0.00, avg:192 },
+  { bracket:'1.500 – 6.000 €', short:'1,5–6K', dec:3127766, pDec:13.04, rev:4652403, pRev:0.00, avg:44 },
+  { bracket:'6.000 – 12.000 €', short:'6–12K', dec:2688297, pDec:11.21, rev:754621278, pRev:0.64, avg:451 },
+  { bracket:'12.000 – 21.000 €', short:'12–21K', dec:4302709, pDec:17.94, rev:7274762621, pRev:6.16, avg:1808 },
+  { bracket:'21.000 – 30.000 €', short:'21–30K', dec:4277053, pDec:17.83, rev:15899962678, pRev:13.46, avg:3765 },
+  { bracket:'30.000 – 60.000 €', short:'30–60K', dec:5282994, pDec:22.02, rev:44231441551, pRev:37.44, avg:8382 },
+  { bracket:'60.000 – 150.000 €', short:'60–150K', dec:1170735, pDec:4.88, rev:28550422931, pRev:24.16, avg:24391 },
+  { bracket:'150.000 – 601.000 €', short:'150–601K', dec:160927, pDec:0.67, rev:13230959483, pRev:11.20, avg:82225 },
+  { bracket:'Más de 601.000 €', short:'>601K', dec:14738, pDec:0.06, rev:8205219505, pRev:6.94, avg:556815 }
+];
+// % of declarants within each bracket that actually have cuota > 0
+const PAY_RATE = [0.0, 0.0, 3.4, 15.2, 58.7, 87.3, 95.1, 98.2, 99.1, 99.8];
+const PAY_DETAIL = [
+  'Renta negativa: no genera cuota',
+  'Renta mínima: no genera cuota',
+  'Solo 106.652 de 3,1M pagan algo (3,4%)',
+  'Solo 408.622 de 2,7M pagan algo',
+  '2,5M pagan pero con cuotas muy bajas (media: 1.808 €)',
+  'La mayoría paga, pero la carga real empieza aquí',
+  'El grueso de la recaudación: 37,4% del IRPF',
+  'Alta contribución: media de 24.391 € por persona',
+  'Grandes contribuyentes: media de 82.225 €',
+  'Élite fiscal: 14.738 personas, media de 556.815 €'
+];
+/* Stronger electric colors for top 2 brackets */
+const COL = ['#d4a853','#daa04a','#e09540','#e08a35','#d98030','#e06830','#d55030','#c93535','#ff2d6b','#ff1a53'];
+
+function fN(n){ return n.toLocaleString('es-ES'); }
+function fE(n){
+  if(n>=1e9) return (n/1e9).toFixed(3).replace('.',',')+' MM €';
+  if(n>=1e6) return (n/1e6).toFixed(1).replace('.',',')+' M €';
+  return fN(Math.round(n))+' €';
+}
+
+// ========== REVEAL OBSERVER ==========
+const rObs = new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('vis'); });
+},{threshold:.08, rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>rObs.observe(el));
+
+// ========== SCROLLYTELLING OBSERVER ==========
+const scrollyObs = new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('active');
+    } else {
+      e.target.classList.remove('active');
+    }
+  });
+},{threshold:0.35, rootMargin:'-5% 0px -5% 0px'});
+document.querySelectorAll('.scrolly-slide').forEach(el=>scrollyObs.observe(el));
+
+// ========== PARALLAX SECTION HEADERS ==========
+const shTitles = document.querySelectorAll('.sh-title');
+const parallaxObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.dataset.parallax = 'true';
+    } else {
+      entry.target.dataset.parallax = 'false';
+    }
+  });
+}, { threshold: 0, rootMargin: '0px 0px 0px 0px' });
+shTitles.forEach(el => parallaxObs.observe(el));
+
+// Use requestAnimationFrame for smooth parallax
+let lastScrollY = 0;
+let ticking = false;
+function updateParallax() {
+  shTitles.forEach(el => {
+    if (el.dataset.parallax === 'true') {
+      const rect = el.getBoundingClientRect();
+      const centerOffset = (rect.top - window.innerHeight / 2) / window.innerHeight;
+      el.style.transform = `translateY(${centerOffset * -15}px)`;
+    }
+  });
+  ticking = false;
+}
+window.addEventListener('scroll', () => {
+  if (!ticking) {
+    requestAnimationFrame(updateParallax);
+    ticking = true;
+  }
+}, { passive: true });
+
+// ========== HERO COUNTER ==========
+function animC(el,target,dur){
+  const t0=performance.now();
+  (function tick(now){
+    const p=Math.min((now-t0)/dur,1), e=1-Math.pow(1-p,3);
+    el.textContent = target>=100 ? Math.round(target*e).toLocaleString('es-ES') : (target*e).toFixed(1).replace('.',',');
+    if(p<1) requestAnimationFrame(tick);
+  })(performance.now());
+}
+const hObs = new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      setTimeout(()=>{
+        animC(document.getElementById('ctr-rev'),118152,2200);
+        animC(document.getElementById('ctr-dec'),23.9,1800);
+      },600);
+      hObs.disconnect();
+    }
+  });
+},{threshold:.25});
+hObs.observe(document.getElementById('hero'));
+setTimeout(()=>{
+  document.getElementById('ctr-rev').textContent='118.152';
+  document.getElementById('ctr-dec').textContent='23,9';
+},4000);
+
+// ========== ANIMATED COUNTER FOR CARDS ==========
+function animateCounter(el, target, duration, prefix, suffix) {
+  const t0 = performance.now();
+  const isLarge = target > 1000;
+  (function tick(now) {
+    const p = Math.min((now - t0) / duration, 1);
+    const e = 1 - Math.pow(1 - p, 3);
+    const val = target * e;
+    let display;
+    if (isLarge) {
+      display = (prefix || '') + Math.round(val).toLocaleString('es-ES') + (suffix || '');
+    } else {
+      display = (prefix || '') + val.toFixed(1).replace('.', ',') + (suffix || '');
+    }
+    el.textContent = display;
+    if (p < 1) requestAnimationFrame(tick);
+  })(performance.now());
+}
+
+// Card counter observer
+const cardObs = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if (e.isIntersecting) {
+      const cards = e.target.querySelectorAll('.icard');
+      cards.forEach((card, i) => {
+        setTimeout(() => {
+          const numEl = card.querySelector('.icard-num');
+          const countVal = parseFloat(numEl.dataset.count);
+          const prefix = numEl.dataset.prefix || '';
+          const suffix = numEl.dataset.suffix || '';
+          animateCounter(numEl, countVal, 1800, prefix, suffix);
+
+          // Animate progress bar
+          const prog = card.querySelector('.icard-progress');
+          if (prog) {
+            const tgt = parseFloat(prog.dataset.target);
+            prog.style.width = tgt + '%';
+          }
+        }, i * 200);
+      });
+      cardObs.disconnect();
+    }
+  });
+}, { threshold: 0.15 });
+const cardsRoot = document.getElementById('cards-root');
+if (cardsRoot) cardObs.observe(cardsRoot);
+
+// ========== COMPARISON WALL COUNTERS ==========
+function buildMosaics() {
+  // Mosaic 1: 22 salary blocks
+  const m1 = document.getElementById('mosaic-1');
+  for (let i = 0; i < 22; i++) {
+    const b = document.createElement('div');
+    b.className = 'cw-mosaic-block';
+    b.style.background = 'var(--accent-gold)';
+    b.style.transitionDelay = (i * 30) + 'ms';
+    m1.appendChild(b);
+  }
+  // Mosaic 2: 1 block for piso
+  const m2 = document.getElementById('mosaic-2');
+  const b2 = document.createElement('div');
+  b2.className = 'cw-mosaic-block';
+  b2.style.background = 'var(--accent-amber)';
+  b2.style.width = '40px'; b2.style.height = '40px'; b2.style.borderRadius = '6px';
+  m2.appendChild(b2);
+  // Mosaic 3: show 20 of 79 blocks
+  const m3 = document.getElementById('mosaic-3');
+  for (let i = 0; i < 20; i++) {
+    const b = document.createElement('div');
+    b.className = 'cw-mosaic-block';
+    b.style.background = 'var(--accent-orange)';
+    b.style.transitionDelay = (i * 25) + 'ms';
+    m3.appendChild(b);
+  }
+  const more = document.createElement('span');
+  more.style.cssText = 'font-size:.72rem;color:var(--text-muted);margin-left:6px;align-self:center;';
+  more.textContent = '+59 más';
+  m3.appendChild(more);
+}
+buildMosaics();
+
+const wallObs = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if (e.isIntersecting) {
+      // Animate counter numbers
+      e.target.querySelectorAll('.cw-equiv-num').forEach((el, i) => {
+        const target = parseInt(el.dataset.target);
+        const suffix = el.dataset.suffix || '';
+        setTimeout(() => {
+          const t0 = performance.now();
+          (function tick(now) {
+            const p = Math.min((now - t0) / 1400, 1);
+            const ev = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * ev) + suffix;
+            if (p < 1) requestAnimationFrame(tick);
+          })(performance.now());
+        }, i * 200);
+      });
+      // Animate mosaic blocks
+      setTimeout(() => {
+        document.querySelectorAll('.cw-mosaic-block').forEach(b => b.classList.add('vis'));
+      }, 400);
+      wallObs.disconnect();
+    }
+  });
+}, { threshold: 0.15 });
+const cwGrid = document.getElementById('cw-grid');
+if (cwGrid) wallObs.observe(cwGrid);
+
+// ========== LORENZ ==========
+function buildLorenz(){
+  const box=document.getElementById('lorenz-chart');
+  const tip=document.getElementById('lorenz-tip');
+  box.querySelectorAll('svg').forEach(s=>s.remove());
+
+  const totalW = 820, totalH = 520;
+  const M={t:25,r:25,b:50,l:55};
+  const W=totalW-M.l-M.r, H=totalH-M.t-M.b;
+
+  const svg=d3.select(box).append('svg')
+    .attr('viewBox',`0 0 ${totalW} ${totalH}`)
+    .attr('preserveAspectRatio','xMidYMid meet');
+
+  const g=svg.append('g').attr('transform',`translate(${M.l},${M.t})`);
+
+  let cD=[0],cT=[0],rd=0,rt=0;
+  D.forEach(d=>{rd+=d.pDec;rt+=d.pRev;cD.push(rd);cT.push(rt);});
+  const pts=cD.map((d,i)=>({x:d/100,y:cT[i]/100,pd:d,pt:cT[i]}));
+
+  const xS=d3.scaleLinear().domain([0,1]).range([0,W]);
+  const yS=d3.scaleLinear().domain([0,1]).range([H,0]);
+
+  // Grid
+  [.2,.4,.6,.8].forEach(v=>{
+    g.append('line').attr('x1',0).attr('x2',W).attr('y1',yS(v)).attr('y2',yS(v)).attr('stroke','rgba(255,255,255,0.04)').attr('stroke-dasharray','2,4');
+    g.append('line').attr('y1',0).attr('y2',H).attr('x1',xS(v)).attr('x2',xS(v)).attr('stroke','rgba(255,255,255,0.04)').attr('stroke-dasharray','2,4');
+  });
+
+  // Equality
+  g.append('line').attr('x1',xS(0)).attr('y1',yS(0)).attr('x2',xS(1)).attr('y2',yS(1))
+    .attr('stroke','rgba(255,255,255,0.18)').attr('stroke-width',1.5).attr('stroke-dasharray','5,4');
+  g.append('text').attr('x',xS(.48)).attr('y',yS(.53))
+    .attr('transform',`rotate(-38,${xS(.48)},${yS(.53)})`)
+    .attr('fill','rgba(255,255,255,0.18)').attr('font-size','11px').text('Igualdad perfecta');
+
+  // Defs
+  const defs=svg.append('defs');
+  const aGr=defs.append('linearGradient').attr('id','gg').attr('x1','0%').attr('y1','100%').attr('x2','100%').attr('y2','0%');
+  aGr.append('stop').attr('offset','0%').attr('stop-color','#d4a853').attr('stop-opacity',.2);
+  aGr.append('stop').attr('offset','60%').attr('stop-color','#e06830').attr('stop-opacity',.14);
+  aGr.append('stop').attr('offset','100%').attr('stop-color','#ff1a53').attr('stop-opacity',.08);
+
+  const lGr=defs.append('linearGradient').attr('id','llg')
+    .attr('gradientUnits','userSpaceOnUse').attr('x1',xS(0)).attr('y1',yS(0)).attr('x2',xS(1)).attr('y2',yS(1));
+  lGr.append('stop').attr('offset','0%').attr('stop-color','#d4a853');
+  lGr.append('stop').attr('offset','50%').attr('stop-color','#e06830');
+  lGr.append('stop').attr('offset','100%').attr('stop-color','#ff1a53');
+
+  // Glow filter for top dots
+  const glowFilter = defs.append('filter').attr('id','dotGlow').attr('x','-50%').attr('y','-50%').attr('width','200%').attr('height','200%');
+  glowFilter.append('feGaussianBlur').attr('stdDeviation','3').attr('result','blur');
+  const feMerge = glowFilter.append('feMerge');
+  feMerge.append('feMergeNode').attr('in','blur');
+  feMerge.append('feMergeNode').attr('in','SourceGraphic');
+
+  // Area
+  const areaGen=d3.area().x(d=>xS(d.x)).y0(d=>yS(d.x)).y1(d=>yS(d.y)).curve(d3.curveMonotoneX);
+  const areaP=g.append('path').datum(pts).attr('d',areaGen).attr('fill','url(#gg)').attr('opacity',0);
+
+  g.append('text').attr('x',xS(.58)).attr('y',yS(.2)).attr('text-anchor','middle')
+    .attr('fill','rgba(224,104,48,0.3)').attr('font-size','12px').attr('font-style','italic').text('Brecha de desigualdad');
+
+  // Line
+  const lineGen=d3.line().x(d=>xS(d.x)).y(d=>yS(d.y)).curve(d3.curveMonotoneX);
+  const lineP=g.append('path').datum(pts).attr('d',lineGen)
+    .attr('fill','none').attr('stroke','url(#llg)').attr('stroke-width',3);
+  const tLen=lineP.node().getTotalLength();
+  lineP.attr('stroke-dasharray',tLen).attr('stroke-dashoffset',tLen);
+
+  // Stronger glow
+  const glow=g.append('path').datum(pts).attr('d',lineGen)
+    .attr('fill','none').attr('stroke','url(#llg)').attr('stroke-width',14).attr('opacity',0)
+    .style('filter','blur(10px)');
+
+  // Dots — top 2 get glow filter and pulse
+  const dots=g.selectAll('.ld').data(pts.slice(1)).enter().append('circle')
+    .attr('cx',d=>xS(d.x)).attr('cy',d=>yS(d.y)).attr('r',(d,i)=> i>=8 ? 6 : 4.5)
+    .attr('fill',(d,i)=>COL[i]).attr('stroke','var(--bg-deep)').attr('stroke-width',2).attr('opacity',0)
+    .style('filter',(d,i)=> i>=8 ? 'url(#dotGlow)' : 'none');
+
+  // Annotations
+  const a1=pts[5];
+  g.append('line').attr('x1',xS(a1.x)).attr('y1',yS(a1.y)).attr('x2',xS(a1.x)+55).attr('y2',yS(a1.y)-65)
+    .attr('stroke','rgba(212,168,83,0.3)').attr('stroke-width',1);
+  g.append('circle').attr('cx',xS(a1.x)+55).attr('cy',yS(a1.y)-65).attr('r',2).attr('fill','var(--accent-gold)');
+  const fo1=g.append('foreignObject').attr('x',xS(a1.x)+62).attr('y',yS(a1.y)-95).attr('width',170).attr('height',60);
+  fo1.append('xhtml:div').attr('xmlns','http://www.w3.org/1999/xhtml')
+    .style('font-size','10.5px').style('line-height','1.5').style('color','rgba(240,236,228,0.5)')
+    .html('<span style="color:#d4a853;font-weight:600">54,5% de declarantes</span><br>solo aportan el 6,8% del IRPF');
+
+  const a2=pts[7];
+  g.append('line').attr('x1',xS(a2.x)).attr('y1',yS(a2.y)).attr('x2',xS(a2.x)-40).attr('y2',yS(a2.y)-55)
+    .attr('stroke','rgba(201,53,53,0.3)').attr('stroke-width',1);
+  g.append('circle').attr('cx',xS(a2.x)-40).attr('cy',yS(a2.y)-55).attr('r',2).attr('fill','var(--accent-red)');
+  const fo2=g.append('foreignObject').attr('x',xS(a2.x)-210).attr('y',yS(a2.y)-85).attr('width',165).attr('height',60);
+  fo2.append('xhtml:div').attr('xmlns','http://www.w3.org/1999/xhtml')
+    .style('font-size','10.5px').style('line-height','1.5').style('color','rgba(240,236,228,0.5)').style('text-align','right')
+    .html('El <span style="color:#c93535;font-weight:600">5,6% más rico</span><br>paga el 42,3% del total');
+
+  // Axes
+  const xA=g.append('g').attr('transform',`translate(0,${H})`).call(d3.axisBottom(xS).ticks(5).tickFormat(d=>(d*100)+'%'));
+  xA.selectAll('text').attr('fill','rgba(255,255,255,0.35)').attr('font-size','11px');
+  xA.selectAll('line').attr('stroke','rgba(255,255,255,0.08)');
+  xA.select('.domain').attr('stroke','rgba(255,255,255,0.08)');
+
+  const yA=g.append('g').call(d3.axisLeft(yS).ticks(5).tickFormat(d=>(d*100)+'%'));
+  yA.selectAll('text').attr('fill','rgba(255,255,255,0.35)').attr('font-size','11px');
+  yA.selectAll('line').attr('stroke','rgba(255,255,255,0.08)');
+  yA.select('.domain').attr('stroke','rgba(255,255,255,0.08)');
+
+  g.append('text').attr('x',W/2).attr('y',H+40).attr('text-anchor','middle')
+    .attr('fill','rgba(255,255,255,0.3)').attr('font-size','11px').text('% acumulado de declarantes (de menor a mayor renta)');
+  g.append('text').attr('transform','rotate(-90)').attr('x',-H/2).attr('y',-42).attr('text-anchor','middle')
+    .attr('fill','rgba(255,255,255,0.3)').attr('font-size','11px').text('% acumulado de recaudación IRPF');
+
+  // Hover
+  const hL=g.append('line').attr('stroke','rgba(212,168,83,0.35)').attr('stroke-width',1).attr('stroke-dasharray','2,3').attr('opacity',0);
+  const hD=g.append('circle').attr('r',6).attr('fill','rgba(212,168,83,0.15)').attr('stroke','var(--accent-gold)').attr('stroke-width',1.5).attr('opacity',0);
+
+  g.append('rect').attr('width',W).attr('height',H).attr('fill','none').attr('pointer-events','all')
+    .on('mousemove',function(ev){
+      const[mx]=d3.pointer(ev);
+      const xv=xS.invert(mx);
+      let cl=pts[0],md=Infinity;
+      pts.forEach(p=>{const dd=Math.abs(p.x-xv);if(dd<md){md=dd;cl=p;}});
+      hD.attr('cx',xS(cl.x)).attr('cy',yS(cl.y)).attr('opacity',1);
+      hL.attr('x1',xS(cl.x)).attr('x2',xS(cl.x)).attr('y1',yS(cl.y)).attr('y2',H).attr('opacity',1);
+      tip.innerHTML=`<strong style="color:var(--accent-gold)">${cl.pd.toFixed(1)}% de declarantes</strong><br>aportan el <strong>${cl.pt.toFixed(1)}%</strong> del IRPF`;
+      tip.classList.add('show');
+
+      const boxRect=box.getBoundingClientRect();
+      const svgRect=svg.node().getBoundingClientRect();
+      const scaleX=svgRect.width/totalW;
+      const ptX=(xS(cl.x)+M.l)*scaleX + svgRect.left - boxRect.left;
+      const ptY=(yS(cl.y)+M.t)*scaleX + svgRect.top - boxRect.top;
+      tip.style.left=(ptX+15)+'px';
+      tip.style.top=(ptY-10)+'px';
+      if(ptX+200>boxRect.width) tip.style.left=(ptX-180)+'px';
+    })
+    .on('mouseleave',function(){
+      hD.attr('opacity',0);hL.attr('opacity',0);tip.classList.remove('show');
+    });
+
+  // Animate
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        lineP.transition().duration(2200).ease(d3.easeCubicInOut).attr('stroke-dashoffset',0);
+        glow.transition().delay(600).duration(1600).attr('opacity',.35);
+        areaP.transition().delay(700).duration(1400).attr('opacity',1);
+        dots.transition().delay((d,i)=>500+i*130).duration(500).attr('opacity',1);
+        obs.disconnect();
+      }
+    });
+  },{threshold:.15});
+  obs.observe(box);
+}
+
+// ========== BARS ==========
+function buildBars(){
+  const root=document.getElementById('bars-root');
+  const tip=document.getElementById('bar-tip');
+  root.innerHTML='';
+
+  function panel(title,key){
+    const p=document.createElement('div');p.className='bar-panel';
+    const t=document.createElement('div');t.className='bp-title';t.textContent=title;
+    p.appendChild(t);
+    const mx=key==='pDec'?25:40;
+    D.forEach((d,i)=>{
+      const row=document.createElement('div');row.className='b-row';
+      const lbl=document.createElement('div');lbl.className='b-lbl';lbl.textContent=d.short;
+      const track=document.createElement('div');track.className='b-track';
+      const fill=document.createElement('div');fill.className='b-fill';
+      fill.style.background=COL[i];
+      fill.dataset.w=Math.max((d[key]/mx)*100,.5);
+
+      // Highlight the 30-60K bracket in revenue panel (index 6, key pRev)
+      if (key === 'pRev' && i === 6) {
+        fill.classList.add('highlight-bar');
+      }
+
+      const val=document.createElement('div');val.className='b-val';
+      val.textContent=d[key]<0.01?'~0%':(d[key]<1?d[key].toFixed(2):d[key].toFixed(1))+'%';
+      track.appendChild(fill);track.appendChild(val);
+      row.appendChild(lbl);row.appendChild(track);
+      p.appendChild(row);
+
+      row.addEventListener('mouseenter',()=>{
+        const payRate = PAY_RATE[i];
+        const payDetail = PAY_DETAIL[i];
+        let payHtml = '';
+        if (payRate <= 0) {
+          payHtml = `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);color:var(--accent-red);">⚠ ${payDetail}</div>`;
+        } else if (payRate < 60) {
+          payHtml = `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);"><span style="color:var(--accent-orange);">Solo el ${payRate}% realmente paga</span><br><span style="color:var(--text-muted);font-size:.75rem;">${payDetail}</span></div>`;
+        } else {
+          payHtml = `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);"><span style="color:var(--accent-gold);">${payRate}% contribuye</span><br><span style="color:var(--text-muted);font-size:.75rem;">${payDetail}</span></div>`;
+        }
+        tip.innerHTML=`<div class="btt">${d.bracket}</div>
+          <div><strong>${fN(d.dec)}</strong> declarantes (${d.pDec}%)</div>
+          <div>Recaudación: <strong>${fE(d.rev)}</strong> (${d.pRev}%)</div>
+          <div>Cuota media: <strong>${fN(d.avg)} €</strong> por persona</div>${payHtml}`;
+        tip.classList.add('show');
+      });
+      row.addEventListener('mousemove',e=>{tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-8)+'px';});
+      row.addEventListener('mouseleave',()=>tip.classList.remove('show'));
+    });
+    return p;
+  }
+
+  root.appendChild(panel('% de declarantes','pDec'));
+  root.appendChild(panel('% de recaudación IRPF','pRev'));
+
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        root.querySelectorAll('.b-fill').forEach((f,i)=>{
+          setTimeout(()=>{f.style.width=f.dataset.w+'%';f.classList.add('go');},Math.floor(i%10)*70);
+        });
+        obs.disconnect();
+      }
+    });
+  },{threshold:.12});
+  obs.observe(root);
+}
+
+// ========== BUBBLES ==========
+function buildBubbles(){
+  const box=document.getElementById('bubble-chart');
+  box.querySelectorAll('svg').forEach(s=>s.remove());
+
+  const totalW=900, totalH=450;
+  const M={t:35,r:15,b:55,l:15};
+  const W=totalW-M.l-M.r, H=totalH-M.t-M.b;
+
+  const svg=d3.select(box).append('svg')
+    .attr('viewBox',`0 0 ${totalW} ${totalH}`)
+    .attr('preserveAspectRatio','xMidYMid meet');
+
+  const defs = svg.append('defs');
+
+  // Breathing pulse filter for >601K
+  const pulseFilter = defs.append('filter').attr('id','breatheGlow').attr('x','-50%').attr('y','-50%').attr('width','200%').attr('height','200%');
+  pulseFilter.append('feGaussianBlur').attr('stdDeviation','4').attr('result','blur');
+  const fm = pulseFilter.append('feMerge');
+  fm.append('feMergeNode').attr('in','blur');
+  fm.append('feMergeNode').attr('in','SourceGraphic');
+
+  const g=svg.append('g').attr('transform',`translate(${M.l},${M.t})`);
+
+  const xB=d3.scaleBand().domain(D.map(d=>d.short)).range([0,W]).padding(.12);
+  const maxAvg=d3.max(D,d=>d.avg);
+  const maxR=Math.min(xB.bandwidth()/2-2,H/2.5);
+  const rS=d3.scaleSqrt().domain([0,maxAvg]).range([2.5,maxR]);
+
+  // Baseline
+  g.append('line').attr('x1',0).attr('x2',W).attr('y1',H).attr('y2',H).attr('stroke','rgba(255,255,255,0.06)');
+
+  // Faint vertical stems
+  D.forEach((d,i)=>{
+    const cx=xB(d.short)+xB.bandwidth()/2;
+    g.append('line').attr('x1',cx).attr('x2',cx).attr('y1',H).attr('y2',H-rS(d.avg)*2-4)
+      .attr('stroke',COL[i]).attr('stroke-opacity',.08).attr('stroke-dasharray','2,3');
+  });
+
+  const bubs=g.selectAll('.bub').data(D).enter().append('g')
+    .attr('transform',d=>`translate(${xB(d.short)+xB.bandwidth()/2},${H})`);
+
+  // Glow circle
+  bubs.append('circle').attr('r',0).attr('cy',0)
+    .attr('fill',(d,i)=>COL[i]).attr('fill-opacity',.08).style('filter','blur(12px)');
+
+  // Main circle
+  bubs.append('circle').attr('class','main-bubble').attr('r',0).attr('cy',0)
+    .attr('fill',(d,i)=>COL[i]).attr('fill-opacity',.18)
+    .attr('stroke',(d,i)=>COL[i]).attr('stroke-width',1.5).attr('stroke-opacity',.7);
+
+  // Value text — inside or above depending on bubble size
+  const SMALL_THRESHOLD = 18;
+  bubs.each(function(d, i) {
+    const el = d3.select(this);
+    const r = rS(d.avg);
+    const textVal = d.avg >= 1000 ? fN(d.avg) + ' €' : d.avg + ' €';
+
+    if (r < SMALL_THRESHOLD) {
+      // For small bubbles: add connecting line and label above
+      el.append('line')
+        .attr('class','connector-line')
+        .attr('x1', 0).attr('y1', 0)
+        .attr('x2', 0).attr('y2', 0)
+        .attr('stroke', COL[i]).attr('stroke-opacity', 0.35)
+        .attr('stroke-width', 1).attr('stroke-dasharray', '2,2');
+
+      el.append('text')
+        .attr('class', 'bubble-label-above')
+        .attr('text-anchor', 'middle')
+        .attr('y', 0)
+        .attr('fill', COL[i])
+        .attr('font-weight', 600)
+        .attr('font-size', '8.5px')
+        .attr('opacity', 0)
+        .text(textVal);
+    } else {
+      // Large enough — label inside
+      el.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '.35em')
+        .attr('y', 0)
+        .attr('fill', COL[i])
+        .attr('font-weight', 600)
+        .attr('opacity', 0)
+        .attr('font-size', r < 30 ? '9px' : '11px')
+        .text(textVal);
+    }
+  });
+
+  // X labels
+  g.selectAll('.xl').data(D).enter().append('text')
+    .attr('x',d=>xB(d.short)+xB.bandwidth()/2).attr('y',H+16)
+    .attr('text-anchor','middle').attr('fill','rgba(255,255,255,0.35)')
+    .attr('font-size','9px').text(d=>d.short);
+
+  g.append('text').attr('x',W/2).attr('y',H+40).attr('text-anchor','middle')
+    .attr('fill','rgba(255,255,255,0.25)').attr('font-size','11px').text('Tramo de renta');
+
+  // Animate
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        bubs.each(function(d,i){
+          const el=d3.select(this);
+          const r=rS(d.avg);
+
+          // Animate circles
+          el.selectAll('circle').transition().delay(i*100).duration(1100)
+            .ease(d3.easeElasticOut.amplitude(1).period(.45))
+            .attr('r',(dd,ci)=>ci===0?r*1.5:r).attr('cy',-r);
+
+          if (r < SMALL_THRESHOLD) {
+            // Animate connector line
+            el.select('.connector-line').transition().delay(i*100+400).duration(600)
+              .attr('y1', -r - 4)
+              .attr('y2', -r - 22);
+
+            // Animate label above the bubble
+            el.select('.bubble-label-above').transition().delay(i*100+600).duration(500)
+              .attr('y', -r - 26)
+              .attr('opacity', 1);
+          } else {
+            el.select('text').transition().delay(i*100+500).duration(600)
+              .attr('opacity',1).attr('y',-r);
+          }
+
+          // >601K bubble: add breathing animation after initial animation
+          if (i === D.length - 1) {
+            setTimeout(() => {
+              el.select('.main-bubble')
+                .style('filter', 'url(#breatheGlow)')
+                .style('animation', 'breathe 3s ease-in-out infinite');
+            }, i * 100 + 1200);
+          }
+        });
+        obs.disconnect();
+      }
+    });
+  },{threshold:.12});
+  obs.observe(box);
+}
+
+// ========== INIT ==========
+function init(){
+  buildLorenz();
+  buildBars();
+  buildBubbles();
+}
+
+setTimeout(init, 100);
+
+// ========== WAFFLE OBSERVER ==========
+const waffleObs = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if (e.isIntersecting) {
+      const persons = e.target.querySelectorAll('.waffle-person');
+      persons.forEach(p => {
+        const delay = parseInt(p.dataset.delay) || 0;
+        setTimeout(() => p.classList.add('vis'), delay);
+      });
+      waffleObs.disconnect();
+    }
+  });
+}, { threshold: 0.2 });
+const waffleGrid = document.getElementById('waffle-grid');
+if (waffleGrid) waffleObs.observe(waffleGrid);
+
+let rT;
+window.addEventListener('resize',()=>{clearTimeout(rT);rT=setTimeout(init,250);});
+</script>
+</body>
+</html>
