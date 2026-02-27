@@ -1208,8 +1208,8 @@ function buildLorenz(){
   const areaGen=d3.area().x(d=>xS(d.x)).y0(d=>yS(d.x)).y1(d=>yS(d.y)).curve(d3.curveMonotoneX);
   const areaP=g.append('path').datum(pts).attr('d',areaGen).attr('fill','url(#gg)').attr('opacity',0);
 
-  g.append('text').attr('x',xS(.58)).attr('y',yS(.2)).attr('text-anchor','middle')
-    .attr('fill','rgba(224,104,48,0.3)').attr('font-size','12px').attr('font-style','italic').text('Brecha de desigualdad');
+  g.append('text').attr('x',xS(.42)).attr('y',yS(.12)).attr('text-anchor','middle')
+    .attr('fill','rgba(224,104,48,0.2)').attr('font-size','11px').attr('font-style','italic').text('Brecha de desigualdad');
 
   // Line
   const lineGen=d3.line().x(d=>xS(d.x)).y(d=>yS(d.y)).curve(d3.curveMonotoneX);
@@ -1230,23 +1230,27 @@ function buildLorenz(){
     .style('filter',(d,i)=> i>=8 ? 'url(#dotGlow)' : 'none');
 
   // Annotations
+  // a1 = pts[5]: at x~404, y~415. Place label ABOVE-LEFT in empty space
   const a1=pts[5];
-  g.append('line').attr('x1',xS(a1.x)).attr('y1',yS(a1.y)).attr('x2',xS(a1.x)+55).attr('y2',yS(a1.y)-65)
+  const a1lx=xS(a1.x)-80, a1ly=yS(a1.y)-90;
+  g.append('line').attr('x1',xS(a1.x)).attr('y1',yS(a1.y)).attr('x2',a1lx).attr('y2',a1ly)
     .attr('stroke','rgba(212,168,83,0.3)').attr('stroke-width',1);
-  g.append('circle').attr('cx',xS(a1.x)+55).attr('cy',yS(a1.y)-65).attr('r',2).attr('fill','var(--accent-gold)');
-  const fo1=g.append('foreignObject').attr('x',xS(a1.x)+62).attr('y',yS(a1.y)-95).attr('width',170).attr('height',60);
+  g.append('circle').attr('cx',a1lx).attr('cy',a1ly).attr('r',2).attr('fill','var(--accent-gold)');
+  const fo1=g.append('foreignObject').attr('x',a1lx-170).attr('y',a1ly-15).attr('width',165).attr('height',50);
   fo1.append('xhtml:div').attr('xmlns','http://www.w3.org/1999/xhtml')
-    .style('font-size','10.5px').style('line-height','1.5').style('color','rgba(240,236,228,0.5)')
+    .style('font-size','10.5px').style('line-height','1.5').style('color','rgba(240,236,228,0.5)').style('text-align','right')
     .html('<span style="color:#d4a853;font-weight:600">54,5% de declarantes</span><br>solo aportan el 6,8% del IRPF');
 
+  // a2 = pts[7]: at x~698, y~188. Place label LEFT-DOWN into the gap area
   const a2=pts[7];
-  g.append('line').attr('x1',xS(a2.x)).attr('y1',yS(a2.y)).attr('x2',xS(a2.x)-40).attr('y2',yS(a2.y)-55)
+  const a2lx=xS(a2.x)-120, a2ly=yS(a2.y)+45;
+  g.append('line').attr('x1',xS(a2.x)).attr('y1',yS(a2.y)).attr('x2',a2lx).attr('y2',a2ly)
     .attr('stroke','rgba(201,53,53,0.3)').attr('stroke-width',1);
-  g.append('circle').attr('cx',xS(a2.x)-40).attr('cy',yS(a2.y)-55).attr('r',2).attr('fill','var(--accent-red)');
-  const fo2=g.append('foreignObject').attr('x',xS(a2.x)-210).attr('y',yS(a2.y)-85).attr('width',165).attr('height',60);
+  g.append('circle').attr('cx',a2lx).attr('cy',a2ly).attr('r',2).attr('fill','var(--accent-red)');
+  const fo2=g.append('foreignObject').attr('x',a2lx-170).attr('y',a2ly-15).attr('width',165).attr('height',50);
   fo2.append('xhtml:div').attr('xmlns','http://www.w3.org/1999/xhtml')
     .style('font-size','10.5px').style('line-height','1.5').style('color','rgba(240,236,228,0.5)').style('text-align','right')
-    .html('El <span style="color:#c93535;font-weight:600">5,6% más rico</span><br>paga el 42,3% del total');
+    .html('El <span style="color:#c93535;font-weight:600">5,6% m\u00e1s rico</span><br>paga el 42,3% del total');
 
   // Axes
   const xA=g.append('g').attr('transform',`translate(0,${H})`).call(d3.axisBottom(xS).ticks(5).tickFormat(d=>(d*100)+'%'));
