@@ -1381,8 +1381,8 @@ function buildBubbles(){
   const box=document.getElementById('bubble-chart');
   box.querySelectorAll('svg').forEach(s=>s.remove());
 
-  const totalW=900, totalH=450;
-  const M={t:35,r:15,b:55,l:15};
+  const totalW=900, totalH=260;
+  const M={t:10,r:15,b:50,l:15};
   const W=totalW-M.l-M.r, H=totalH-M.t-M.b;
 
   const svg=d3.select(box).append('svg')
@@ -1402,8 +1402,8 @@ function buildBubbles(){
 
   const xB=d3.scaleBand().domain(D.map(d=>d.short)).range([0,W]).padding(.12);
   const maxAvg=d3.max(D,d=>d.avg);
-  const maxR=Math.min(xB.bandwidth()/2-2,H/2.5);
-  const rS=d3.scaleSqrt().domain([0,maxAvg]).range([2.5,maxR]);
+  const maxR=Math.min(xB.bandwidth()/2-2,H*0.9);
+  const rS=d3.scaleSqrt().domain([0,maxAvg]).range([3,maxR]);
 
   // Baseline
   g.append('line').attr('x1',0).attr('x2',W).attr('y1',H).attr('y2',H).attr('stroke','rgba(255,255,255,0.06)');
